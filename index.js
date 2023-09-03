@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const cors = require('cors');
 const app = express();
@@ -16,7 +16,8 @@ app.use(express.json())
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSW}@cluster0shop52.knssrag.mongodb.net/?retryWrites=true&w=majority`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -31,9 +32,7 @@ async function run() {
     const usersCollection = database.collection('Users');
     const ordersCollection = database.collection('Order');
 
-    // const user = { name: 'text', email: 'text@gmail.com' }
-    // const send = await usersCollection.insertOne(user);
-    // console.log(send);
+    
 
     // User Get
     app.get('/users', async (req, res) => {
@@ -43,13 +42,49 @@ async function run() {
       res.send(users)
     }) 
 
+
+    // specific user get
+    app.get('/users/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const user = await usersCollection.findOne(query);
+      res.send(user)
+    })
+
     // user add via Post
     app.post('/users', async (req, res) => {
       const user = req.body;
       const result = await usersCollection.insertOne(user);
       res.send(result)
-      console.log(result);
+      // console.log(result);
     })
+
+    // user Update
+    app.put('/users/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+
+      const user = req.body;
+      const options = { upsert: true };
+      const updateUser = {
+        $set: {
+          name:user.name,
+          address:user.address,
+          phone:user.phone,
+          email:user.email
+        }
+      }
+      const result = await usersCollection.updateOne(filter, updateUser, options);
+      res.send(result)
+    })
+
+    // delete user
+    app.delete('/users/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await usersCollection.deleteOne(query)
+      res.send(result)
+    }) 
 
 
 
